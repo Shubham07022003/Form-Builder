@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const session = require('express-session');
+const RedisStore = require('connect-redis')(session);
+const { createClient } = require('redis');
 
 dotenv.config();
 
@@ -40,10 +42,22 @@ const sessionConfig = {
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     domain: process.env.NODE_ENV === 'production' ? '.yourdomain.com' : undefined
-  },
-  // Use a proper session store in production
-  // store: sessionStore
+  }
 };
+
+// Add Redis store for production
+if (process.env.NODE_ENV === 'production' && process.env.REDIS_URL) {
+  const redisClient = createClient({
+    url: process.env.REDIS_URL
+  });
+  
+  redisClient.connect().catch(console.error);
+  
+  sessionConfig.store = new RedisStore({ client: redisClient });
+  console.log('Using Redis session store for production');
+} else {
+  console.log('Using MemoryStore (development only)');
+}
 
 // In production, require HTTPS for secure cookies
 if (process.env.NODE_ENV === 'production') {

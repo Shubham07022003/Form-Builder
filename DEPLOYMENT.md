@@ -107,6 +107,35 @@ railway up
 - Go to Railway dashboard → Your Project → Variables
 - Add all the required environment variables
 
+### Redis Session Store Setup
+
+For production deployment, it's recommended to use Redis for session storage:
+
+#### Heroku Redis
+```bash
+heroku addons:create heroku-redis:hobby-dev
+heroku config:get REDIS_URL
+```
+
+#### Railway Redis
+```bash
+railway variables set REDIS_URL=redis://your-redis-url
+```
+
+#### Self-hosted Redis
+```bash
+# Install Redis on your server
+sudo apt-get install redis-server
+
+# Or use Docker
+docker run -d -p 6379:6379 redis:alpine
+```
+
+Add the Redis URL to your production environment variables:
+```bash
+REDIS_URL=redis://username:password@redis-host:port
+```
+
 ### MongoDB Atlas Setup
 
 1. **Create MongoDB Atlas Account**
