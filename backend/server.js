@@ -47,8 +47,14 @@ const sessionConfig = {
 
 // Add Redis store for production
 if (process.env.NODE_ENV === 'production' && process.env.REDIS_URL) {
+  // Clean up Redis URL if it has redis-cli prefix
+  let redisUrl = process.env.REDIS_URL;
+  if (redisUrl.includes('redis-cli -u ')) {
+    redisUrl = redisUrl.replace('redis-cli -u ', '');
+  }
+  
   const redisClient = createClient({
-    url: process.env.REDIS_URL
+    url: redisUrl
   });
   
   redisClient.connect().catch(console.error);
