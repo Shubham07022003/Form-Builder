@@ -56,6 +56,8 @@ function App() {
   const checkAuth = async () => {
     try {
       console.log('Checking authentication status...');
+      console.log('Cookies available:', document.cookie);
+      
       const response = await api.get('/auth/me');
       console.log('Auth check successful:', response.data);
       setUser(response.data);

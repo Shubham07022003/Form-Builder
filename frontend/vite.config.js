@@ -20,13 +20,14 @@ export default defineConfig(({ command, mode }) => {
           secure: false,
           ws: true,
           cookieDomainRewrite: "",
+          withCredentials: true,
           configure: (proxy, _options) => {
             proxy.on('proxyReq', (proxyReq, req, _res) => {
               // Forward cookies properly
               if (req.headers.cookie) {
                 proxyReq.setHeader('cookie', req.headers.cookie);
               }
-              console.log('Proxy Request:', req.method, req.url);
+              console.log('Proxy Request:', req.method, req.url, 'Cookies:', req.headers.cookie);
             });
             proxy.on('proxyRes', (proxyRes, req, _res) => {
               // Forward Set-Cookie headers properly
@@ -53,4 +54,3 @@ export default defineConfig(({ command, mode }) => {
     }
   };
 });
-

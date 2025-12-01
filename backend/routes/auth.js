@@ -177,9 +177,14 @@ router.get('/airtable/callback', async (req, res) => {
  */
 router.get('/me', async (req, res) => {
   try {
+    console.log('Auth /me endpoint called');
+    console.log('Cookies received:', req.headers.cookie);
+    console.log('Session ID:', req.sessionID);
+    
     const userId = req.session?.userId;
 
     if (!userId) {
+      console.log('No userId found in session');
       return res.status(401).json({ error: 'Not authenticated' });
     }
 
@@ -189,6 +194,7 @@ router.get('/me', async (req, res) => {
 
     res.json(user);
   } catch (error) {
+    console.error('Error in /auth/me:', error);
     res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
