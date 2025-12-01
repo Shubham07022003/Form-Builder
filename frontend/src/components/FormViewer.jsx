@@ -82,7 +82,6 @@ function FormViewer() {
       if (error.response?.data?.errors) {
         const newErrors = {};
         error.response.data.errors.forEach(err => {
-          // Try to extract question key from error message
           const question = form.questions.find(q => err.includes(q.label));
           if (question) {
             newErrors[question.questionKey] = err;
@@ -152,7 +151,6 @@ function FormViewer() {
         </div>
         <form onSubmit={handleSubmit}>
           {form.questions.map((question, index) => {
-            // Check if question should be shown
             const shouldShow = shouldShowQuestion(question.conditionalRules, answers);
             
             if (!shouldShow) {
@@ -225,7 +223,6 @@ function FormViewer() {
                     multiple
                     onChange={(e) => {
                       const files = Array.from(e.target.files);
-                      // For now, just store file names. In production, you'd upload to a service first
                       handleAnswerChange(question.questionKey, files.map(f => ({ name: f.name, url: '' })));
                     }}
                   />

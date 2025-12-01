@@ -1,8 +1,6 @@
 const Airtable = require('airtable');
 
-/**
- * Get Airtable base instance
- */
+
 function getAirtableBase(accessToken, baseId) {
   Airtable.configure({
     endpointUrl: 'https://api.airtable.com',
@@ -11,9 +9,7 @@ function getAirtableBase(accessToken, baseId) {
   return new Airtable().base(baseId);
 }
 
-/**
- * Fetch all bases for a user
- */
+
 async function fetchBases(accessToken) {
   try {
     const response = await fetch('https://api.airtable.com/v0/meta/bases', {
@@ -35,9 +31,7 @@ async function fetchBases(accessToken) {
   }
 }
 
-/**
- * Fetch tables for a base
- */
+
 async function fetchTables(accessToken, baseId) {
   try {
     const response = await fetch(`https://api.airtable.com/v0/meta/bases/${baseId}/tables`, {
@@ -59,14 +53,11 @@ async function fetchTables(accessToken, baseId) {
   }
 }
 
-/**
- * Fetch fields for a table
- */
+
 async function fetchFields(accessToken, baseId, tableId) {
   try {
     console.log(`Fetching fields for base: ${baseId}, table: ${tableId}`);
     
-    // Try the meta API first
     let response = await fetch(`https://api.airtable.com/v0/meta/bases/${baseId}/tables/${tableId}`, {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
@@ -77,7 +68,6 @@ async function fetchFields(accessToken, baseId, tableId) {
     if (!response.ok) {
       console.log(`Meta API failed (${response.status}), trying direct table access...`);
       
-      // Fallback: Try to get a few records to infer the schema
       response = await fetch(`https://api.airtable.com/v0/${baseId}/${tableId}?maxRecords=1`, {
         headers: {
           'Authorization': `Bearer ${accessToken}`,
@@ -114,9 +104,7 @@ async function fetchFields(accessToken, baseId, tableId) {
   }
 }
 
-/**
- * Map Airtable field type to our supported types
- */
+
 function mapFieldType(airtableType) {
   const typeMap = {
     'singleLineText': 'shortText',
@@ -129,9 +117,7 @@ function mapFieldType(airtableType) {
   return typeMap[airtableType] || null;
 }
 
-/**
- * Get options for select fields
- */
+
 function getFieldOptions(field) {
   if (field.options && field.options.choices) {
     return field.options.choices.map(choice => choice.name || choice);
@@ -139,9 +125,7 @@ function getFieldOptions(field) {
   return [];
 }
 
-/**
- * Create a record in Airtable
- */
+
 async function createRecord(accessToken, baseId, tableId, fields) {
   try {
     const base = getAirtableBase(accessToken, baseId);
@@ -153,9 +137,7 @@ async function createRecord(accessToken, baseId, tableId, fields) {
   }
 }
 
-/**
- * Update a record in Airtable
- */
+
 async function updateRecord(accessToken, baseId, tableId, recordId, fields) {
   try {
     const base = getAirtableBase(accessToken, baseId);

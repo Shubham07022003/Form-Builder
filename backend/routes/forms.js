@@ -5,17 +5,15 @@ const { fetchBases, fetchTables, fetchFields, mapFieldType, getFieldOptions } = 
 
 const router = express.Router();
 
-// All other routes require authentication
 router.use(authenticate);
 
-// Get all bases for the authenticated user
+
 router.get('/bases', async (req, res) => {
   try {
     console.log('Fetching bases for user:', req.user.airtableUserId);
     console.log('Access token exists:', !!req.user.accessToken);
     console.log('Token expires at:', req.user.tokenExpiresAt);
     
-    // Check if token is expired
     if (req.user.tokenExpiresAt && new Date() > req.user.tokenExpiresAt) {
       console.log('Access token expired');
       return res.status(401).json({ error: 'Access token expired. Please log in again.' });
@@ -33,11 +31,9 @@ router.get('/bases', async (req, res) => {
   }
 });
 
-// Public route: Get single form (for viewing/filling) - must be after specific routes
 router.get('/:formId', async (req, res) => {
   try {
     const { formId } = req.params;
-    // Skip if this is a special route
     if (formId === 'bases') {
       return res.status(404).json({ error: 'Not found' });
     }
@@ -55,15 +51,11 @@ router.get('/:formId', async (req, res) => {
 });
 
 
-/**
- * Get tables for a base
- */
 router.get('/bases/:baseId/tables', async (req, res) => {
   try {
     const { baseId } = req.params;
     console.log('Fetching tables for base:', baseId);
     
-    // Check if token is expired
     if (req.user.tokenExpiresAt && new Date() > req.user.tokenExpiresAt) {
       return res.status(401).json({ error: 'Access token expired. Please log in again.' });
     }
@@ -80,20 +72,16 @@ router.get('/bases/:baseId/tables', async (req, res) => {
   }
 });
 
-/**
- * Get fields for a table
- */
 router.get('/bases/:baseId/tables/:tableId/fields', async (req, res) => {
   try {
     const { baseId, tableId } = req.params;
     const fields = await fetchFields(req.user.accessToken, baseId, tableId);
 
-    // Filter and map to supported field types
     const supportedFields = fields
       .map(field => {
         const mappedType = mapFieldType(field.type);
         if (!mappedType) {
-          return null; // Skip unsupported types
+          return null;
         }
 
         return {
@@ -112,9 +100,6 @@ router.get('/bases/:baseId/tables/:tableId/fields', async (req, res) => {
   }
 });
 
-/**
- * Get all forms for the authenticated user
- */
 router.get('/', async (req, res) => {
   try {
     const forms = await Form.find({ owner: req.user._id })
@@ -127,25 +112,19 @@ router.get('/', async (req, res) => {
   }
 });
 
-/**
- * Create a new form
- */
 router.post('/', async (req, res) => {
   try {
     const { title, airtableBaseId, airtableTableId, questions } = req.body;
 
-    // Validate required fields
     if (!airtableBaseId || !airtableTableId || !questions || !Array.isArray(questions)) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Validate each question
     for (const question of questions) {
       if (!question.questionKey || !question.airtableFieldId || !question.label || !question.type) {
         return res.status(400).json({ error: 'Invalid question structure' });
       }
 
-      // Validate type
       const validTypes = ['shortText', 'longText', 'singleSelect', 'multiSelect', 'attachment'];
       if (!validTypes.includes(question.type)) {
         return res.status(400).json({ error: `Invalid question type: ${question.type}` });
@@ -167,9 +146,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-/**
- * Update a form
- */
 router.put('/:formId', async (req, res) => {
   try {
     const { formId } = req.params;
@@ -191,9 +167,6 @@ router.put('/:formId', async (req, res) => {
   }
 });
 
-/**
- * Delete a form
- */
 router.delete('/:formId', async (req, res) => {
   try {
     const { formId } = req.params;

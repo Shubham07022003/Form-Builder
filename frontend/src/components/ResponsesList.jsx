@@ -30,14 +30,12 @@ function ResponsesList({ user }) {
       return;
     }
 
-    // Get all unique question keys from all responses
     const allKeys = new Set();
     responses.forEach(response => {
       Object.keys(response.answers).forEach(key => allKeys.add(key));
     });
     const headers = ['ID', 'Status', 'Created At', ...Array.from(allKeys)];
 
-    // Create CSV content
     const csvContent = [
       headers.join(','),
       ...responses.map(response => {
@@ -47,7 +45,6 @@ function ResponsesList({ user }) {
           new Date(response.createdAt).toISOString(),
           ...Array.from(allKeys).map(key => {
             const value = response.answers[key];
-            // Handle different data types and escape CSV
             if (value === null || value === undefined) return '';
             if (Array.isArray(value)) return `"${value.join('; ')}"`;
             if (typeof value === 'object') return `"${JSON.stringify(value).replace(/"/g, '""')}"`;
@@ -76,7 +73,6 @@ function ResponsesList({ user }) {
       return;
     }
 
-    // Create JSON content with better structure
     const jsonData = {
       exportDate: new Date().toISOString(),
       totalResponses: responses.length,

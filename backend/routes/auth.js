@@ -4,16 +4,12 @@ const User = require('../models/User');
 
 const router = express.Router();
 
-// Airtable OAuth configuration
 const AIRTABLE_CLIENT_ID = process.env.AIRTABLE_CLIENT_ID;
 const AIRTABLE_CLIENT_SECRET = process.env.AIRTABLE_CLIENT_SECRET;
 const AIRTABLE_REDIRECT_URI =
   process.env.AIRTABLE_REDIRECT_URI ||
-  'http://localhost:5000/api/auth/airtable/callback';
+  'http://localhost:5001/api/auth/airtable/callback';
 
-/**
- * Debug endpoint (for local testing)
- */
 router.get('/debug', (req, res) => {
   res.json({
     hasClientId: !!AIRTABLE_CLIENT_ID,
@@ -21,16 +17,11 @@ router.get('/debug', (req, res) => {
     hasClientSecret: !!AIRTABLE_CLIENT_SECRET,
     clientSecretLength: AIRTABLE_CLIENT_SECRET?.length || 0,
     redirectUri: AIRTABLE_REDIRECT_URI,
-    redirectUriMatches:
-      AIRTABLE_REDIRECT_URI ===
-      'http://localhost:5000/api/auth/airtable/callback',
     frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+    environment: process.env.NODE_ENV,
   });
 });
 
-/**
- * Step 1 — Redirect user to Airtable OAuth
- */
 router.get('/airtable', (req, res) => {
   if (!AIRTABLE_CLIENT_ID || !AIRTABLE_CLIENT_SECRET) {
     return res.status(500).json({
@@ -61,9 +52,6 @@ router.get('/airtable', (req, res) => {
   res.redirect(authUrl);
 });
 
-/**
- * Step 2 — Handle Airtable OAuth callback
- */
 router.get('/airtable/callback', async (req, res) => {
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
@@ -94,7 +82,6 @@ router.get('/airtable/callback', async (req, res) => {
     params.append('grant_type', 'authorization_code');
     params.append('redirect_uri', AIRTABLE_REDIRECT_URI);
 
-    // Exchange code for token
     let tokenResponse;
     try {
       tokenResponse = await axios.post(
@@ -120,7 +107,6 @@ router.get('/airtable/callback', async (req, res) => {
       return res.status(500).json({ error: 'No access token returned' });
     }
 
-    // Fetch user info
     let userInfoResponse;
     try {
       userInfoResponse = await axios.get('https://api.airtable.com/v0/meta/whoami', {
@@ -138,7 +124,6 @@ router.get('/airtable/callback', async (req, res) => {
       return res.status(500).json({ error: 'Invalid user data from Airtable' });
     }
 
-    // Save user
     let user = await User.findOne({ airtableUserId: airtableUser.id });
 
     const userData = {
@@ -157,9 +142,19 @@ router.get('/airtable/callback', async (req, res) => {
       user = await User.create(userData);
     }
 
+    console.log('User saved successfully:', user._id);
+    
     req.session.userId = user._id.toString();
-
-    return res.redirect(`${frontendUrl}/dashboard`);
+    console.log('Session userId set to:', req.session.userId);
+    console.log('Session data after setting:', req.session);
+    req.session.save((err) => {
+      if (err) {
+        console.error('Error saving session:', err);
+        return res.redirect(`${frontendUrl}/login?error=session_save_failed`);
+      }
+      console.log('Session saved successfully, redirecting to dashboard');
+      return res.redirect(`${frontendUrl}/dashboard`);
+    });
   } catch (error) {
     const msg =
       error.response?.data?.error_description ||
@@ -172,9 +167,6 @@ router.get('/airtable/callback', async (req, res) => {
   }
 });
 
-/**
- * Return logged-in user
- */
 router.get('/me', async (req, res) => {
   try {
     console.log('Auth /me endpoint called');
@@ -199,9 +191,6 @@ router.get('/me', async (req, res) => {
   }
 });
 
-/**
- * Logout user
- */
 router.post('/logout', (req, res) => {
   req.session.destroy((err) => {
     if (err) return res.status(500).json({ error: 'Logout failed' });

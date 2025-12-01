@@ -1,21 +1,15 @@
-/**
- * Pure function to determine if a question should be shown based on conditional rules
- * This is a client-side version matching the backend logic
- */
+
 export function shouldShowQuestion(rules, answersSoFar) {
-  // If no rules, always show the question
   if (!rules || !rules.conditions || rules.conditions.length === 0) {
     return true;
   }
 
   const { logic, conditions } = rules;
 
-  // Evaluate each condition
   const conditionResults = conditions.map(condition => {
     const { questionKey, operator, value } = condition;
     const answerValue = answersSoFar[questionKey];
 
-    // If answer is missing/undefined, return false for strict evaluation
     if (answerValue === undefined || answerValue === null) {
       return false;
     }
@@ -40,7 +34,6 @@ export function shouldShowQuestion(rules, answersSoFar) {
     }
   });
 
-  // Combine results based on logic operator
   if (logic === 'AND') {
     return conditionResults.every(result => result === true);
   } else if (logic === 'OR') {

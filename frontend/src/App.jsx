@@ -7,23 +7,16 @@ import FormBuilder from './components/FormBuilder';
 import FormViewer from './components/FormViewer';
 import ResponsesList from './components/ResponsesList';
 
-// Configure axios defaults
 const api = axios.create({
-  baseURL: '/api', // Use proxy instead of direct URL
+  baseURL: '/api',
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   }
 });
 
-// Add a request interceptor
 api.interceptors.request.use(
   (config) => {
-    // You can add auth headers here if needed
-    // const token = localStorage.getItem('token');
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
     return config;
   },
   (error) => {
@@ -31,13 +24,11 @@ api.interceptors.request.use(
   }
 );
 
-// Add a response interceptor
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error('API Error:', error.response?.status, error.response?.data || error.message);
-    // Only redirect to login on 401 if not already on login page
-    if (error.response?.status === 401 && !window.location.pathname.includes('/login')) {
+    if (error.response?.status === 401 && !window.location.pathname.includes('/login') && !loading) {
       console.log('401 Unauthorized, redirecting to login');
       window.location.href = '/login?error=session_expired';
     }
@@ -73,13 +64,10 @@ function App() {
     try {
       await api.post('/auth/logout');
       setUser(null);
-      // Clear any stored tokens or user data
       localStorage.removeItem('user');
-      // Navigate to login without triggering auth check
       window.location.replace('/login');
     } catch (error) {
       console.error('Logout error:', error);
-      // Force logout even if API call fails
       setUser(null);
       localStorage.removeItem('user');
       window.location.replace('/login');

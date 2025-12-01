@@ -6,7 +6,6 @@ function Login({ onLogin }) {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Check for error in URL first
     const errorParam = searchParams.get('error');
     if (errorParam) {
       const errorMessages = {
@@ -15,22 +14,17 @@ function Login({ onLogin }) {
         'access_denied': 'You denied access to the application.',
         'invalid_request': 'Invalid OAuth request. Please check your configuration.',
         'no_verifier': 'Session verification failed. Please try again.',
-        'auth_failed': 'Authentication failed. Please try again.'
+        'auth_failed': 'Authentication failed. Please try again.',
+        'OAuth failed:': 'OAuth authentication failed. Please check your credentials.'
       };
       setError(errorMessages[errorParam] || `Authentication error: ${errorParam}`);
       console.error('OAuth error:', errorParam);
     }
     
-    // Check if already logged in (only if no error)
-    if (!errorParam) {
-      onLogin();
-    }
-  }, [onLogin, searchParams]);
+  }, [searchParams]);
 
   const handleLogin = () => {
-    // Clear any previous errors
     setError(null);
-    // Redirect to backend OAuth endpoint
     window.location.href = '/api/auth/airtable';
   };
 

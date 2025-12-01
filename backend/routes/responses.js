@@ -8,44 +8,35 @@ const { shouldShowQuestion } = require('../utils/conditionalLogic');
 
 const router = express.Router();
 
-/**
- * Submit a form response (public - no auth required)
- */
 router.post('/forms/:formId/submit', async (req, res) => {
   try {
     const { formId } = req.params;
     const { answers } = req.body;
 
-    // Fetch form and populate owner to get access token
     const form = await Form.findById(formId).populate('owner');
     if (!form) {
       return res.status(404).json({ error: 'Form not found' });
     }
 
-    // Get form owner's access token
     const owner = await User.findById(form.owner);
     if (!owner || !owner.accessToken) {
       return res.status(500).json({ error: 'Form owner authentication not available' });
     }
 
-    // Validate answers against form definition
     const validationErrors = [];
 
     for (const question of form.questions) {
       const answer = answers[question.questionKey];
 
-      // Check required fields
       if (question.required && (answer === undefined || answer === null || answer === '')) {
         validationErrors.push(`${question.label} is required`);
         continue;
       }
 
-      // Skip validation if answer is empty and field is not required
       if (answer === undefined || answer === null || answer === '') {
         continue;
       }
 
-      // Validate based on type
       switch (question.type) {
         case 'singleSelect':
           if (!question.options.includes(answer)) {
@@ -83,18 +74,15 @@ router.post('/forms/:formId/submit', async (req, res) => {
       return res.status(400).json({ errors: validationErrors });
     }
 
-    // Prepare fields for Airtable
     const airtableFields = {};
     for (const question of form.questions) {
       const answer = answers[question.questionKey];
       if (answer !== undefined && answer !== null && answer !== '') {
-        // Map answer to Airtable field format
         if (question.type === 'multiSelect') {
           airtableFields[question.airtableFieldId] = answer;
         } else if (question.type === 'singleSelect') {
           airtableFields[question.airtableFieldId] = answer;
         } else if (question.type === 'attachment') {
-          // Airtable expects array of objects with url property
           airtableFields[question.airtableFieldId] = answer.map(att => ({
             url: att.url || att
           }));
@@ -104,7 +92,6 @@ router.post('/forms/:formId/submit', async (req, res) => {
       }
     }
 
-    // Create record in Airtable using form owner's access token
     let airtableRecord;
     try {
       airtableRecord = await createRecord(
@@ -118,7 +105,6 @@ router.post('/forms/:formId/submit', async (req, res) => {
       return res.status(500).json({ error: 'Failed to save to Airtable', details: airtableError.message });
     }
 
-    // Save response to database
     const response = await Response.create({
       formId: form._id,
       airtableRecordId: airtableRecord.id,
@@ -136,30 +122,23 @@ router.post('/forms/:formId/submit', async (req, res) => {
   }
 });
 
-// Routes that require authentication
 router.use(authenticate);
 
-/**
- * Get all responses for a form
- */
+
 router.get('/forms/:formId/responses', async (req, res) => {
   try {
     const { formId } = req.params;
 
-    // Verify form exists and user owns it
     const form = await Form.findOne({ _id: formId, owner: req.user._id });
     if (!form) {
       return res.status(404).json({ error: 'Form not found' });
     }
 
-    // Fetch responses from database
     const responses = await Response.find({ formId })
       .sort({ createdAt: -1 })
       .select('_id airtableRecordId answers createdAt updatedAt deletedInAirtable');
 
-    // Format responses for display
     const formattedResponses = responses.map(response => {
-      // Create a compact preview of answers
       const answerPreview = {};
       for (const question of form.questions) {
         const answer = response.answers[question.questionKey];
@@ -190,9 +169,7 @@ router.get('/forms/:formId/responses', async (req, res) => {
   }
 });
 
-/**
- * Get a single response by ID
- */
+
 router.get('/responses/:responseId', async (req, res) => {
   try {
     const { responseId } = req.params;
@@ -202,7 +179,6 @@ router.get('/responses/:responseId', async (req, res) => {
       return res.status(404).json({ error: 'Response not found' });
     }
 
-    // Verify user owns the form
     const form = await Form.findOne({ _id: response.formId, owner: req.user._id });
     if (!form) {
       return res.status(403).json({ error: 'Access denied' });

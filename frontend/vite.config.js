@@ -19,7 +19,6 @@ export default defineConfig(({ command, mode }) => {
           changeOrigin: true,
           secure: false,
           ws: true,
-          cookieDomainRewrite: "",
           withCredentials: true,
           configure: (proxy, _options) => {
             proxy.on('proxyReq', (proxyReq, req, _res) => {
@@ -27,23 +26,35 @@ export default defineConfig(({ command, mode }) => {
               if (req.headers.cookie) {
                 proxyReq.setHeader('cookie', req.headers.cookie);
               }
-              console.log('Proxy Request:', req.method, req.url, 'Cookies:', req.headers.cookie);
+              console.log('Proxy Request:', req.method, req.url, 'Origin:', req.headers.origin, 'Cookies:', req.headers.cookie);
             });
             proxy.on('proxyRes', (proxyRes, req, _res) => {
-              // Forward Set-Cookie headers properly
+              // Forward Set-Cookie headers properly for tunnels
               const cookies = proxyRes.headers['set-cookie'];
               if (cookies) {
-                // Remove domain and secure attributes for localhost
-                const modifiedCookies = cookies.map(cookie => 
-                  cookie
-                    .replace(/; domain=[^;]+/i, '')
-                    .replace(/; secure/i, '')
-                    .replace(/; SameSite=None/i, '; SameSite=Lax')
-                );
+                // For tunnel mode, we need to modify cookies to work cross-origin
+                const modifiedCookies = cookies.map(cookie => {
+                  let modifiedCookie = cookie;
+                  
+                  // Remove domain attribute for tunnels
+                  modifiedCookie = modifiedCookie.replace(/; domain=[^;]+/i, '');
+                  
+                  // Remove secure attribute for HTTP tunnels
+                  if (req.headers.origin && req.headers.origin.includes('devtunnels.ms')) {
+                    modifiedCookie = modifiedCookie.replace(/; secure/i, '');
+                  }
+                  
+                  // Set SameSite=None for cross-origin tunnels
+                  if (req.headers.origin && req.headers.origin.includes('devtunnels.ms')) {
+                    modifiedCookie = modifiedCookie.replace(/; SameSite=[^;]+/i, '; SameSite=None');
+                  }
+                  
+                  return modifiedCookie;
+                });
                 proxyRes.headers['set-cookie'] = modifiedCookies;
-                console.log('Modified cookies for localhost:', modifiedCookies);
+                console.log('Modified cookies for tunnel:', modifiedCookies);
               }
-              console.log('Proxy Response:', proxyRes.statusCode, req.url);
+              console.log('Proxy Response:', proxyRes.statusCode, req.url, 'Origin:', req.headers.origin);
             });
             proxy.on('error', (err, _req, _res) => {
               console.log('proxy error', err);
