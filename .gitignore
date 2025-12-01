@@ -34,3 +34,8 @@ Thumbs.db
 *.db
 *.sqlite
 
+# Documentation (sensitive setup info)
+OAUTH_SETUP.md
+TROUBLESHOOTING.md
+QUICK_START.md
+
