@@ -139,4 +139,7 @@ airtable-form-builder/
 ### Webhooks
 - `POST /api/webhooks/airtable` - Airtable webhook handler
 
+## License
+
+MIT
 
