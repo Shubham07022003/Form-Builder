@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const session = require('express-session');
-const RedisStore = require('connect-redis');
+const RedisStore = require('connect-redis').default;
 const { createClient } = require('redis');
 
 dotenv.config();
@@ -45,25 +45,25 @@ const sessionConfig = {
   }
 };
 
-// Add Redis store for production
-if (process.env.NODE_ENV === 'production' && process.env.REDIS_URL) {
-  // Clean up Redis URL if it has redis-cli prefix
-  let redisUrl = process.env.REDIS_URL;
-  if (redisUrl.includes('redis-cli -u ')) {
-    redisUrl = redisUrl.replace('redis-cli -u ', '');
-  }
-  
-  const redisClient = createClient({
-    url: redisUrl
-  });
-  
-  redisClient.connect().catch(console.error);
-  
-  sessionConfig.store = new RedisStore({ client: redisClient });
-  console.log('Using Redis session store for production');
-} else {
-  console.log('Using MemoryStore (development only)');
-}
+// Add Redis store for production (optional - comment out to use MemoryStore)
+// if (process.env.NODE_ENV === 'production' && process.env.REDIS_URL) {
+//   // Clean up Redis URL if it has redis-cli prefix
+//   let redisUrl = process.env.REDIS_URL;
+//   if (redisUrl.includes('redis-cli -u ')) {
+//     redisUrl = redisUrl.replace('redis-cli -u ', '');
+//   }
+//   
+//   const redisClient = createClient({
+//     url: redisUrl
+//   });
+//   
+//   redisClient.connect().catch(console.error);
+//   
+//   sessionConfig.store = new RedisStore({ client: redisClient });
+//   console.log('Using Redis session store for production');
+// } else {
+  console.log('Using MemoryStore (development and production)');
+// }
 
 // In production, require HTTPS for secure cookies
 if (process.env.NODE_ENV === 'production') {
